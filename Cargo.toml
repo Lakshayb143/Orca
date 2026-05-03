@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "crates/orca-core",
+    "crates/orca-daemon",
+    "crates/orca-agents",
+    "crates/orca-tui",
+    "crates/orca-wizard",
+    "crates/orca-kb",
+    "crates/orca-cli",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
