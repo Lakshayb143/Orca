@@ -1,0 +1,10 @@
+[package]
+name = "orca-wizard"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+inquire = "0.9.1"
+orca-core = { path = "../orca-core" }
+thiserror = "2.0.18"
+toml = "0.9.12"

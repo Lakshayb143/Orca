@@ -27,19 +27,19 @@ Tickets are ordered so that at each milestone boundary, you have a runnable-and-
 
 **Goal**: one binary that compiles, runs, has a working CLI skeleton and daemon skeleton, speaks a minimal protocol over a Unix socket.
 
-### M0-T01 — Cargo workspace
+### ~~M0-T01 — Cargo workspace~~
 - **Depends on**: nothing
 - **Scope**: Create the workspace `Cargo.toml` with the crate layout from `ARCHITECTURE.md § Project layout`. Each crate has a stub `lib.rs` (or `main.rs` for the binary crate) that just exports nothing / prints hello.
 - **Acceptance**: `cargo build --workspace` passes. `cargo run --bin orca -- version` prints a version string.
 - **Out of scope**: any real functionality; dependencies beyond `clap` and `tokio`.
 
-### M0-T02 — CLI skeleton with clap
+### ~~M0-T02 — CLI skeleton with clap~~
 - **Depends on**: M0-T01
 - **Scope**: In `orca-cli`, define the top-level `Cli` struct with derive clap. Add subcommand enums matching `CLI.md`: `Init`, `Config`, `Daemon`, `Task(TaskCmd)`, `Agent(AgentCmd)`, `Kb(KbCmd)`, `Status`, `Watch`, `Version`, `Doctor`. All handlers are `unimplemented!()` except `Version`.
 - **Acceptance**: `orca --help` shows all subcommands and their options. `orca version` works. Running any other subcommand exits 1 cleanly with "not yet implemented".
 - **Out of scope**: subcommand implementations.
 
-### M0-T03 — Daemon process skeleton
+### ~~M0-T03 — Daemon process skeleton~~
 - **Depends on**: M0-T02
 - **Scope**: In `orca-daemon`, implement `run_daemon()` that:
   1. Creates `.orca/state/` if missing
@@ -53,7 +53,7 @@ Tickets are ordered so that at each milestone boundary, you have a runnable-and-
 - **Acceptance**: `orca daemon -f` runs in foreground; in another terminal, `nc -U .orca/state/daemon.sock` and sending `{"type":"ping"}` gets `{"type":"pong"}` back. `Ctrl-C` cleans up.
 - **Out of scope**: real RPC protocol; any actual state.
 
-### M0-T04 — RPC client helper
+### ~~M0-T04 — RPC client helper~~
 - **Depends on**: M0-T03
 - **Scope**: In `orca-cli`, add a helper module `daemon_client` that:
   - Connects to the socket (with retry if daemon is starting)
@@ -62,7 +62,7 @@ Tickets are ordered so that at each milestone boundary, you have a runnable-and-
 - **Acceptance**: A new `orca ping` subcommand (temporary, remove in M1) that calls the helper, prints the response.
 - **Out of scope**: typed request/response schemas.
 
-### M0-T05 — Logging
+### ~~M0-T05 — Logging~~
 - **Depends on**: M0-T01
 - **Scope**: Add `tracing` + `tracing-subscriber` to the binary. Log level from `RUST_LOG` env and `-v`/`-q` flags. Logs to stderr by default; daemon logs to `.orca/logs/daemon.log` via file appender.
 - **Acceptance**: `RUST_LOG=debug orca daemon -f` produces structured debug logs. `.orca/logs/daemon.log` exists when daemonized.
@@ -71,37 +71,37 @@ Tickets are ordered so that at each milestone boundary, you have a runnable-and-
 
 **Goal**: `orca init` works, writes a valid config, daemon reads state on startup, CRUD on tasks via CLI.
 
-### M1-T01 — config schema types
+### ~~M1-T01 — config schema types~~
 - **Depends on**: M0
 - **Scope**: In `orca-core`, define Rust structs mirroring the `config.toml` schema in `STATE.md`. Use `serde` derive. Provide a `Config::defaults()` function.
 - **Acceptance**: Unit tests: round-trip serialize/deserialize a valid config. Unit test with the `STATE.md` example config. Defaults produce a parseable TOML.
 
-### M1-T02 — config loader
+### ~~M1-T02 — config loader~~
 - **Depends on**: M1-T01
 - **Scope**: `Config::load_from(path: &Path)` merges file with defaults. Env var expansion (`${VAR}` in string values). Validation: reject unknown agent IDs, negative USD limits, etc.
 - **Acceptance**: Tests for malformed configs produce clear error messages pointing to the bad field.
 
-### M1-T03 — inquire wizard for `orca init`
+### ~~M1-T03 — inquire wizard for `orca init`~~
 - **Depends on**: M1-T02
 - **Scope**: In `orca-wizard`, implement the 8-step flow from `UI.md`. Uses `inquire`. Writes the resulting TOML atomically (temp + rename). Detects existing config and offers to overwrite/merge.
 - **Acceptance**: `orca init` in an empty dir produces a valid `.orca/config.toml`. Re-running with `--force` overwrites. Without `--force`, prompts.
 
-### M1-T04 — task types & on-disk format
+### ~~M1-T04 — task types & on-disk format~~
 - **Depends on**: M0
 - **Scope**: Define `Task`, `TaskState`, `TaskId` in `orca-core`. Implement `Task::from_file` and `Task::write_atomic`. Match the `task.toml` schema in `STATE.md`.
 - **Acceptance**: Round-trip tests. A task written by the code can be read back identically. Hand-editing a task.toml and re-reading works.
 
-### M1-T05 — state store in daemon
+### ~~M1-T05 — state store in daemon~~
 - **Depends on**: M1-T04, M0-T03
 - **Scope**: The daemon holds `StateStore`, a struct that owns `HashMap<TaskId, Task>`, plus agent status files. On startup, scans `.orca/state/tasks/` and loads every task. Provides methods: `create_task`, `update_task`, `get_task`, `list_tasks`. Every mutation writes through to disk.
 - **Acceptance**: Start daemon, create a task via direct store method call, restart daemon, task is still there.
 
-### M1-T06 — filesystem watcher
+### ~~M1-T06 — filesystem watcher~~
 - **Depends on**: M1-T05
 - **Scope**: Use `notify` to watch `.orca/state/tasks/` and `.orca/config.toml`. On changes from outside, reconcile with in-memory state. Log a warning on conflicts (shouldn't happen if nobody else is writing).
 - **Acceptance**: Manual test: `echo` a new task.toml into `.orca/state/tasks/T-999/`, daemon logs "task T-999 ingested".
 
-### M1-T07 — RPC protocol types
+### ~~M1-T07 — RPC protocol types~~
 - **Depends on**: M1-T04, M0-T04
 - **Scope**: Define request/response enums. Requests: `Ping`, `CreateTask`, `GetTask`, `ListTasks`, `UpdateTaskState`. Responses: matched types. Use `serde` tagged enum format. Document the protocol in a new file `docs/RPC.md` (stub for now).
 - **Acceptance**: Types compile, serialize cleanly as `{"type": "...", "data": {...}}`.
